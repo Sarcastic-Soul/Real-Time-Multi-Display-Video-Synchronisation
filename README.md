@@ -6,9 +6,9 @@ A server-authoritative real-time video synchronization system driving video play
 
 ## 🎥 Demo Video
 
-https://github.com/user-attachments/assets/ee1b990bf877dd55675c4997ea58efa383e27a0c
+https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation/raw/main/demo.mp4
 
-<video src="https://github.com/user-attachments/assets/ee1b990bf877dd55675c4997ea58efa383e27a0c" controls width="100%"></video>
+<video src="https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation/raw/main/demo.mp4" controls width="100%"></video>
 
 ---
 
