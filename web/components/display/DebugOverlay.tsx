@@ -18,6 +18,8 @@ export const DebugOverlay: React.FC<DebugOverlayProps> = ({ expectedPosSec, onIn
   const currentPositionSec = useDisplayStore((s) => s.currentPositionSec);
   const driftMs = useDisplayStore((s) => s.driftMs);
   const playbackRate = useDisplayStore((s) => s.playbackRate);
+  const rttMs = useDisplayStore((s) => s.rttMs);
+  const clockOffsetMs = useDisplayStore((s) => s.clockOffsetMs);
   const lastCorrectionType = useDisplayStore((s) => s.lastCorrectionType);
   const lastCorrectionAt = useDisplayStore((s) => s.lastCorrectionAt);
 
@@ -81,7 +83,7 @@ export const DebugOverlay: React.FC<DebugOverlayProps> = ({ expectedPosSec, onIn
               <span className="text-white font-semibold">{currentPositionSec.toFixed(2)}s</span>
             </div>
 
-            <div className="flex justify-between items-center py-1">
+            <div className="flex justify-between items-center py-0.5">
               <span className="text-slate-400">Calculated Drift:</span>
               <span className={`px-2 py-0.5 rounded border font-bold ${driftBadgeColor}`}>
                 {driftMs > 0 ? `+${driftMs}` : driftMs} ms
@@ -91,6 +93,16 @@ export const DebugOverlay: React.FC<DebugOverlayProps> = ({ expectedPosSec, onIn
             <div className="flex justify-between">
               <span className="text-slate-400">Playback Rate:</span>
               <span className="font-bold text-cyan-300">{playbackRate.toFixed(2)}x</span>
+            </div>
+
+            <div className="flex justify-between text-[11px] pt-1 border-t border-slate-800/60 text-slate-400">
+              <span>NTP Network RTT:</span>
+              <span className="text-cyan-400 font-semibold">{rttMs} ms</span>
+            </div>
+
+            <div className="flex justify-between text-[11px] text-slate-400">
+              <span>Clock Sync Offset:</span>
+              <span className="text-emerald-400 font-semibold">{clockOffsetMs > 0 ? `+${clockOffsetMs}` : clockOffsetMs} ms</span>
             </div>
 
             <div className="flex justify-between border-t border-slate-800/80 pt-2">

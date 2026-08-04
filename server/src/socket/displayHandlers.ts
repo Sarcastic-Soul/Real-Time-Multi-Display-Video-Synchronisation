@@ -9,6 +9,16 @@ export function setupDisplayHandlers(
   sessionState: SessionStateManager,
   displayRegistry: DisplayRegistry
 ): void {
+  // NTP Clock Ping/Pong Handler
+  socket.on("sync:ping", (payload: { clientTime: number }) => {
+    if (payload && typeof payload.clientTime === "number") {
+      socket.emit("sync:pong", {
+        clientTime: payload.clientTime,
+        serverTime: Date.now(),
+      });
+    }
+  });
+
   socket.on("display:register", (rawPayload: unknown) => {
     const parseResult = DisplayRegisterSchema.safeParse(rawPayload);
     if (!parseResult.success) {
@@ -24,7 +34,7 @@ export function setupDisplayHandlers(
 
     const now = Date.now();
     const currentState = sessionState.getState();
-    const expectedPos = sessionState.getExpectedPositionSec(now);
+    const expectedPos = sessionState.getExpectedPositionSec("default-room", now);
 
     // Send immediate initial session state to newly connected display
     socket.emit("session:state", currentState);
@@ -41,7 +51,7 @@ export function setupDisplayHandlers(
 
     const { clientId, positionSec, status } = parseResult.data;
     const now = Date.now();
-    const expectedPos = sessionState.getExpectedPositionSec(now);
+    const expectedPos = sessionState.getExpectedPositionSec("default-room", now);
 
     displayRegistry.updateStatusReport(clientId, positionSec, status, expectedPos, now);
 
@@ -53,7 +63,7 @@ export function setupDisplayHandlers(
     const disconnectedClientId = displayRegistry.handleDisconnectBySocketId(socket.id);
     if (disconnectedClientId) {
       const now = Date.now();
-      const expectedPos = sessionState.getExpectedPositionSec(now);
+      const expectedPos = sessionState.getExpectedPositionSec("default-room", now);
       io.emit("session:displays", displayRegistry.getDisplaysReport(expectedPos, now));
     }
   });

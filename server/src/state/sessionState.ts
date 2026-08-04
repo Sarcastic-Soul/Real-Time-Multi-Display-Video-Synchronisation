@@ -1,83 +1,97 @@
 import { SessionState, ControllerCommand } from "../types.js";
 
 export class SessionStateManager {
-  private state: SessionState;
+  private rooms: Map<string, SessionState>;
 
   constructor() {
-    this.state = {
-      videoId: "sample-1", // default video
-      status: "paused",
-      positionAtLastUpdateSec: 0,
-      lastUpdatedAt: Date.now(),
-      seq: 0,
-    };
+    this.rooms = new Map();
+    this.getRoomState("default-room");
   }
 
-  public getState(): SessionState {
-    return { ...this.state };
-  }
-
-  public getExpectedPositionSec(now: number = Date.now()): number {
-    if (this.state.status === "paused") {
-      return this.state.positionAtLastUpdateSec;
+  public getRoomState(roomId: string = "default-room"): SessionState {
+    if (!this.rooms.has(roomId)) {
+      this.rooms.set(roomId, {
+        roomId,
+        videoId: "sample-1",
+        status: "paused",
+        positionAtLastUpdateSec: 0,
+        lastUpdatedAt: Date.now(),
+        seq: 0,
+      });
     }
-    const elapsedSec = (now - this.state.lastUpdatedAt) / 1000;
-    return Math.max(0, this.state.positionAtLastUpdateSec + elapsedSec);
+    return { ...this.rooms.get(roomId)! };
+  }
+
+  public getState(roomId: string = "default-room"): SessionState {
+    return this.getRoomState(roomId);
+  }
+
+  public getExpectedPositionSec(roomId: string = "default-room", now: number = Date.now()): number {
+    const state = this.getRoomState(roomId);
+    if (state.status === "paused") {
+      return state.positionAtLastUpdateSec;
+    }
+    const elapsedSec = (now - state.lastUpdatedAt) / 1000;
+    return Math.max(0, state.positionAtLastUpdateSec + elapsedSec);
   }
 
   public applyCommand(command: ControllerCommand, now: number = Date.now()): SessionState {
-    const currentExpected = this.getExpectedPositionSec(now);
+    const roomId = command.roomId || "default-room";
+    let state = this.getRoomState(roomId);
+    const currentExpected = this.getExpectedPositionSec(roomId, now);
 
     switch (command.type) {
       case "SELECT_VIDEO":
-        this.state = {
+        state = {
+          roomId,
           videoId: command.videoId,
           status: "paused",
           positionAtLastUpdateSec: 0,
           lastUpdatedAt: now,
-          seq: this.state.seq + 1,
+          seq: state.seq + 1,
         };
         break;
 
       case "PLAY":
-        this.state = {
-          ...this.state,
+        state = {
+          ...state,
           status: "playing",
           positionAtLastUpdateSec: currentExpected,
           lastUpdatedAt: now,
-          seq: this.state.seq + 1,
+          seq: state.seq + 1,
         };
         break;
 
       case "PAUSE":
-        this.state = {
-          ...this.state,
+        state = {
+          ...state,
           status: "paused",
           positionAtLastUpdateSec: currentExpected,
           lastUpdatedAt: now,
-          seq: this.state.seq + 1,
+          seq: state.seq + 1,
         };
         break;
 
       case "SEEK":
-        this.state = {
-          ...this.state,
+        state = {
+          ...state,
           positionAtLastUpdateSec: Math.max(0, command.positionSec),
           lastUpdatedAt: now,
-          seq: this.state.seq + 1,
+          seq: state.seq + 1,
         };
         break;
 
       case "RESTART":
-        this.state = {
-          ...this.state,
+        state = {
+          ...state,
           positionAtLastUpdateSec: 0,
           lastUpdatedAt: now,
-          seq: this.state.seq + 1,
+          seq: state.seq + 1,
         };
         break;
     }
 
-    return this.getState();
+    this.rooms.set(roomId, state);
+    return { ...state };
   }
 }

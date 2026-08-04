@@ -20,15 +20,16 @@ export function setupControllerHandlers(
     }
 
     const command = parseResult.data;
+    const roomId = (command as any).roomId || "default-room";
     const now = Date.now();
     const updatedState = sessionState.applyCommand(command, now);
-    const expectedPos = sessionState.getExpectedPositionSec(now);
+    const expectedPos = sessionState.getExpectedPositionSec(roomId, now);
 
     // Broadcast session state & display command to all connected sockets
     io.emit("session:state", updatedState);
     io.emit("display:command", command);
 
     // Broadcast display table update to controller
-    io.emit("session:displays", displayRegistry.getDisplaysReport(expectedPos, now));
+    io.emit("session:displays", displayRegistry.getDisplaysReport(expectedPos, now, roomId));
   });
 }

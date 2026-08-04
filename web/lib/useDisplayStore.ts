@@ -10,6 +10,8 @@ interface DisplayStore {
   currentPositionSec: number;
   driftMs: number;
   playbackRate: number;
+  rttMs: number;
+  clockOffsetMs: number;
   lastCorrectionType: "none" | "soft" | "hard";
   lastCorrectionAt: number;
 
@@ -20,6 +22,7 @@ interface DisplayStore {
   setCurrentPositionSec: (pos: number) => void;
   setDriftMs: (driftMs: number) => void;
   setPlaybackRate: (rate: number) => void;
+  setNtpStats: (rttMs: number, clockOffsetMs: number) => void;
   setCorrection: (type: "soft" | "hard", now: number) => void;
   sendStatusReport: () => void;
 }
@@ -32,6 +35,8 @@ export const useDisplayStore = create<DisplayStore>((set, get) => ({
   currentPositionSec: 0,
   driftMs: 0,
   playbackRate: 1.0,
+  rttMs: 0,
+  clockOffsetMs: 0,
   lastCorrectionType: "none",
   lastCorrectionAt: 0,
 
@@ -42,16 +47,19 @@ export const useDisplayStore = create<DisplayStore>((set, get) => ({
   setCurrentPositionSec: (currentPositionSec) => set({ currentPositionSec }),
   setDriftMs: (driftMs) => set({ driftMs }),
   setPlaybackRate: (playbackRate) => set({ playbackRate }),
+  setNtpStats: (rttMs, clockOffsetMs) => set({ rttMs, clockOffsetMs }),
   setCorrection: (lastCorrectionType, lastCorrectionAt) =>
     set({ lastCorrectionType, lastCorrectionAt }),
 
   sendStatusReport: () => {
-    const { clientId, currentPositionSec, localStatus } = get();
+    const { clientId, currentPositionSec, localStatus, rttMs, clockOffsetMs } = get();
     if (!clientId) return;
     socket.emit("display:statusReport", {
       clientId,
       positionSec: currentPositionSec,
       status: localStatus,
+      rttMs,
+      clockOffsetMs,
     });
   },
 }));

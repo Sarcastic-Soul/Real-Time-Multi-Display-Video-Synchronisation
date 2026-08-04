@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { socket } from "@/lib/socket";
 import { useDisplayStore } from "@/lib/useDisplayStore";
-import { SessionState, ControllerCommand, PlaybackStatus } from "@/lib/types";
+import { SessionState, ControllerCommand, PlaybackStatus, SyncPongPayload } from "@/lib/types";
 import { getVideoById } from "@/lib/videoLibrary";
 import { DebugOverlay } from "./DebugOverlay";
 
@@ -25,6 +25,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
   const setCurrentPositionSec = useDisplayStore((s) => s.setCurrentPositionSec);
   const setDriftMs = useDisplayStore((s) => s.setDriftMs);
   const setPlaybackRate = useDisplayStore((s) => s.setPlaybackRate);
+  const setNtpStats = useDisplayStore((s) => s.setNtpStats);
   const setCorrection = useDisplayStore((s) => s.setCorrection);
   const sendStatusReport = useDisplayStore((s) => s.sendStatusReport);
 
@@ -35,25 +36,31 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
   const [playError, setPlayError] = useState<string | null>(null);
 
   const lastCorrectionTimeRef = useRef<number>(0);
+  const clockOffsetMsRef = useRef<number>(0);
+  const rttMsRef = useRef<number>(0);
+
   const activeVideo = getVideoById(sessionState?.videoId || null);
 
-  // Compute server's current expected position
-  const calculateExpectedPosition = useCallback((state: SessionState | null, now: number = Date.now()): number => {
+  // Compute server's current expected position incorporating NTP clock offset
+  const calculateExpectedPosition = useCallback((state: SessionState | null, clientNow: number = Date.now()): number => {
     if (!state) return 0;
+    const serverNow = clientNow + clockOffsetMsRef.current;
     if (state.status === "paused") {
       return state.positionAtLastUpdateSec;
     }
-    const elapsedSec = (now - state.lastUpdatedAt) / 1000;
+    const elapsedSec = (serverNow - state.lastUpdatedAt) / 1000;
     return Math.max(0, state.positionAtLastUpdateSec + elapsedSec);
   }, []);
 
-  // Initialize socket listeners & display registration
+  // Initialize socket listeners & NTP ping loop & display registration
   useEffect(() => {
     setClientId(clientId);
 
     const onConnect = () => {
       setConnected(true);
       socket.emit("display:register", { clientId });
+      // Trigger immediate initial NTP ping
+      socket.emit("sync:ping", { clientTime: Date.now() });
     };
 
     const onDisconnect = () => {
@@ -64,8 +71,23 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
       setSessionState(state);
     };
 
+    const onSyncPong = (data: SyncPongPayload) => {
+      const t2 = Date.now();
+      const t1 = data.clientTime;
+      const rtt = Math.max(0, t2 - t1);
+      const latency = rtt / 2;
+      const sampleOffset = data.serverTime - (t1 + latency);
+
+      // Exponential Moving Average (EMA) smoothing for offset
+      rttMsRef.current = Math.round(rttMsRef.current === 0 ? rtt : 0.7 * rttMsRef.current + 0.3 * rtt);
+      clockOffsetMsRef.current = Math.round(
+        clockOffsetMsRef.current === 0 ? sampleOffset : 0.8 * clockOffsetMsRef.current + 0.2 * sampleOffset
+      );
+
+      setNtpStats(rttMsRef.current, clockOffsetMsRef.current);
+    };
+
     const onDisplayCommand = (command: ControllerCommand) => {
-      // Immediate reaction to explicit controller commands
       const video = videoRef.current;
       if (!video) return;
 
@@ -95,17 +117,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("session:state", onSessionState);
+    socket.on("sync:pong", onSyncPong);
     socket.on("display:command", onDisplayCommand);
 
+    // Periodic NTP Ping loop every 3 seconds
+    const pingInterval = setInterval(() => {
+      if (socket.connected) {
+        socket.emit("sync:ping", { clientTime: Date.now() });
+      }
+    }, 3000);
+
     return () => {
+      clearInterval(pingInterval);
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("session:state", onSessionState);
+      socket.off("sync:pong", onSyncPong);
       socket.off("display:command", onDisplayCommand);
     };
-  }, [clientId, setClientId, setConnected, setSessionState, setCorrection]);
+  }, [clientId, setClientId, setConnected, setSessionState, setCorrection, setNtpStats]);
 
-  // Main synchronization and tick loop (runs every 200ms)
+  // Main synchronization and tick loop (runs every 150ms)
   useEffect(() => {
     const syncLoop = setInterval(() => {
       const video = videoRef.current;
@@ -174,7 +206,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
 
       // Send status report to server
       sendStatusReport();
-    }, 200);
+    }, 150);
 
     return () => clearInterval(syncLoop);
   }, [
@@ -231,8 +263,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ clientId }) => {
       )}
 
       {/* Display ID Tag */}
-      <div className="absolute top-4 left-4 bg-slate-900/80 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400 backdrop-blur-md z-30">
-        Display: <span className="text-white font-bold">{clientId}</span>
+      <div className="absolute top-4 left-4 bg-slate-900/80 border border-slate-700/80 px-3 py-1.5 rounded-lg text-xs font-mono text-cyan-400 backdrop-blur-md z-30 flex items-center gap-2">
+        <span>Display: <strong className="text-white font-bold">{clientId}</strong></span>
       </div>
 
       {/* Real-time Debug HUD Overlay */}

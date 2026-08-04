@@ -24,7 +24,7 @@ const displayRegistry = new DisplayRegistry();
 
 io.on("connection", (socket) => {
   // Immediate state sync upon socket connection
-  socket.emit("session:state", sessionState.getState());
+  socket.emit("session:state", sessionState.getState("default-room"));
 
   setupControllerHandlers(io, socket, sessionState, displayRegistry);
   setupDisplayHandlers(io, socket, sessionState, displayRegistry);
@@ -33,14 +33,14 @@ io.on("connection", (socket) => {
 // Server Tick Loop (every TICK_INTERVAL_MS)
 setInterval(() => {
   const now = Date.now();
-  const state = sessionState.getState();
-  const expectedPositionSec = sessionState.getExpectedPositionSec(now);
+  const state = sessionState.getState("default-room");
+  const expectedPositionSec = sessionState.getExpectedPositionSec("default-room", now);
 
   // Broadcast current state to all connected sockets
   io.emit("session:state", state);
 
   // Broadcast updated display reports to controller(s)
-  io.emit("session:displays", displayRegistry.getDisplaysReport(expectedPositionSec, now));
+  io.emit("session:displays", displayRegistry.getDisplaysReport(expectedPositionSec, now, "default-room"));
 }, TICK_INTERVAL_MS);
 
 httpServer.listen(PORT, () => {

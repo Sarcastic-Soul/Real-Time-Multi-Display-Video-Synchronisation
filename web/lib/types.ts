@@ -8,6 +8,7 @@ export interface VideoMeta {
 }
 
 export interface SessionState {
+  roomId?: string;
   videoId: string | null;
   status: "playing" | "paused";
   positionAtLastUpdateSec: number; // authoritative position when lastUpdatedAt was set
@@ -17,16 +18,28 @@ export interface SessionState {
 
 export interface DisplayStatusReport {
   clientId: string;
+  roomId?: string;
   connected: boolean;
   positionSec: number;
   status: PlaybackStatus;
   driftMs: number;
+  rttMs?: number;
+  clockOffsetMs?: number;
   lastReportAt: number;
 }
 
 export type ControllerCommand =
-  | { type: "SELECT_VIDEO"; videoId: string }
-  | { type: "PLAY" }
-  | { type: "PAUSE" }
-  | { type: "SEEK"; positionSec: number }
-  | { type: "RESTART" };
+  | { type: "SELECT_VIDEO"; videoId: string; roomId?: string }
+  | { type: "PLAY"; roomId?: string }
+  | { type: "PAUSE"; roomId?: string }
+  | { type: "SEEK"; positionSec: number; roomId?: string }
+  | { type: "RESTART"; roomId?: string };
+
+export interface SyncPingPayload {
+  clientTime: number;
+}
+
+export interface SyncPongPayload {
+  clientTime: number;
+  serverTime: number;
+}
