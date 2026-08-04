@@ -4,6 +4,14 @@ A server-authoritative real-time video synchronization system driving video play
 
 ---
 
+## 🎥 Demo Video
+
+<video src="demo.mp4" controls width="100%"></video>
+
+*(If the video player doesn't load directly above, view [demo.mp4](demo.mp4))*
+
+---
+
 ## 🚀 Deployed Links & Repository
 
 * **Live App (Render)**: [https://multi-display-video-sync.onrender.com](https://multi-display-video-sync.onrender.com)
