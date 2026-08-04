@@ -1,6 +1,6 @@
 # Real-Time Multi-Display Video Sync System
 
-A server-authoritative real-time video synchronization system driving video playback across multiple display endpoints with automatic drift detection, soft playback rate scaling, and hard seek resynchronization.
+A server-authoritative real-time video synchronization system driving video playback across multiple display endpoints with automatic drift detection, NTP clock latency estimation, soft playback rate scaling, and hard seek resynchronization.
 
 ---
 
@@ -29,10 +29,12 @@ A server-authoritative real-time video synchronization system driving video play
                              |   (Node.js + Express + Socket.IO) |
                              |   - Owns authoritative position   |
                              |   - Runs 250ms tick broadcast loop|
+                             |   - NTP ping/pong clock offset    |
                              +--------+-----------------+--------+
                                       |                 |
                           session:state                 session:state
                           display:command               display:command
+                          sync:ping/pong                sync:ping/pong
                                       |                 |
                                       v                 v
                    +------------------+----+       +----+------------------+
@@ -75,7 +77,7 @@ A server-authoritative real-time video synchronization system driving video play
 
 3. **Open in Browser**:
    - Master Controller: [http://localhost:3000/controller](http://localhost:3000/controller)
-   - Display Client #1: [http://localhost:3000/display/disp-1](http://localhost:3000/display/disp-1)
+   - Display Client #1: [http://localhost:3000/display/disp-1](http://localhost:3000/display/disp-2)
    - Display Client #2: [http://localhost:3000/display/disp-2](http://localhost:3000/display/disp-2)
 
 ---
@@ -119,13 +121,15 @@ docker run -d -p 3000:3000 -p 4000:4000 <YOUR_DOCKERHUB_USERNAME>/multi-video-sy
 ## 🌟 Features & Core Capabilities
 
 - **Server-Authoritative Position Model**: Server continuously evaluates `expectedPositionSec(now) = status === 'playing' ? positionAtLastUpdateSec + (now - lastUpdatedAt)/1000 : positionAtLastUpdateSec`.
+- **NTP-Style Network Latency Offset Estimation**: Displays send periodic `sync:ping` packets to measure Round-Trip Time (RTT) and system clock offset via Exponential Moving Average (EMA), adjusting local expected time for microsecond network latency.
+- **Multi-Room Session Support**: Managed room instances (`roomId`) allowing multiple isolated video wall sessions simultaneously.
 - **Master Controller Dashboard**:
   - Video stream selector cards with live duration meta.
   - Interactive playback control bar (Play, Pause, Seek slider, Restart).
   - Real-time connected displays monitoring table with live position, status, and drift badges.
 - **Display Clients**:
   - Native HTML5 `<video>` element with zero heavy external wrapper libraries.
-  - Floating Debug HUD Overlay showing live server expected position vs local position, calculated drift, playback rate, and last correction event.
+  - Floating Debug HUD Overlay showing live server expected position vs local position, calculated drift, network RTT latency, clock offset, playback rate, and last correction event.
   - Mid-session joining and automatic reconnect synchronization.
 - **Dual-Threshold Drift Correction**:
   - **Hard Seek (`|driftMs| > 750ms`)**: Instantly updates `video.currentTime` to authoritative position.
@@ -143,13 +147,12 @@ docker run -d -p 3000:3000 -p 4000:4000 <YOUR_DOCKERHUB_USERNAME>/multi-video-sy
 5. On one of the display tabs, use the **Debug HUD Overlay** at the bottom-right:
    - Click **"Seek -1.5s (Lag)"**: This induces a 1500ms drift. Observe the Debug HUD report a **HARD SEEK** correction that immediately pulls the player back into sync.
    - Click **"Seek +1.5s (Lead)"**: Observe another hard seek resynchronizing the player.
-6. Check the Controller table: notice the drift badge for that display updating dynamically in real time.
+6. Check the Controller table: notice the drift badge for that display updating dynamically in real time alongside live NTP network RTT metrics.
 
 ---
 
 ## 💡 What I'd Do With More Time
 
-1. **NTP-Style Clock Offset Estimation**: Calculate network round-trip time (RTT) between server and clients to adjust `Date.now()` timestamps for network latency.
-2. **WebRTC DataChannels**: Implement P2P WebRTC data channels for sub-50ms peer-to-peer sync.
-3. **Frame-Accurate Video Decoding**: Use HTML5 `requestVideoFrameCallback()` for precise video frame count synchronization.
-4. **Multi-Room Support**: Support room IDs in socket payloads to enable multiple isolated playback sessions concurrently.
+1. **WebRTC DataChannels**: Implement P2P WebRTC data channels for sub-20ms peer-to-peer sync.
+2. **GPU V-Sync Video Callbacks**: Utilize `requestVideoFrameCallback()` for hardware frame-locked synchronization.
+3. **Adaptive Bitrate Streaming (HLS/DASH)**: Support `.m3u8` streams for dynamic multi-quality video walls.
