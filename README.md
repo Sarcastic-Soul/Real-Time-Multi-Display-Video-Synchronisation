@@ -14,9 +14,9 @@ https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation/
 
 ## 🚀 Deployed Links & Repository
 
-* **Live App (Render)**: [https://multi-display-video-sync.onrender.com](https://multi-display-video-sync.onrender.com)
-* **Master Controller**: [https://multi-display-video-sync.onrender.com/controller](https://multi-display-video-sync.onrender.com/controller)
-* **Display Client #1**: [https://multi-display-video-sync.onrender.com/display/disp-1](https://multi-display-video-sync.onrender.com/display/disp-1)
+* **Live App (Render)**: [https://multi-video-sync-latest.onrender.com](https://multi-video-sync-latest.onrender.com/)
+* **Master Controller**: [https://multi-video-sync-latest.onrender.com/controller](https://multi-video-sync-latest.onrender.com/controller)
+* **Display Client #1**: [https://multi-video-sync-latest.onrender.com/display/disp-1](https://multi-video-sync-latest.onrender.com/display/disp-1)
 * **GitHub Repository**: [https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation](https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation)
 
 ---
