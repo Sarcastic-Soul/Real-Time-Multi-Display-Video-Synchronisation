@@ -4,7 +4,16 @@ A server-authoritative real-time video synchronization system driving video play
 
 ---
 
-## Architecture Diagram
+## 🚀 Deployed Links & Repository
+
+* **Live App (Render)**: [https://multi-display-video-sync.onrender.com](https://multi-display-video-sync.onrender.com)
+* **Master Controller**: [https://multi-display-video-sync.onrender.com/controller](https://multi-display-video-sync.onrender.com/controller)
+* **Display Client #1**: [https://multi-display-video-sync.onrender.com/display/disp-1](https://multi-display-video-sync.onrender.com/display/disp-1)
+* **GitHub Repository**: [https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation](https://github.com/Sarcastic-Soul/Real-Time-Multi-Display-Video-Synchronisation)
+
+---
+
+## 🏗️ Architecture Diagram
 
 ```
                              +-----------------------------------+
@@ -35,47 +44,85 @@ A server-authoritative real-time video synchronization system driving video play
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Root**: `concurrently` process manager
-- **`server/`**: Node.js, Express, Socket.IO, Zod validation, TypeScript, `tsx`
-- **`web/`**: Next.js 15 (App Router), React 19, `socket.io-client`, Zustand, Tailwind CSS
+- **Process Manager**: `concurrently` / `Docker` container
+- **Server (`server/`)**: Node.js, Express, Socket.IO, Zod validation, TypeScript, `tsx`
+- **Frontend (`web/`)**: Next.js 15 (App Router), React 19, `socket.io-client`, Zustand, Tailwind CSS
 
 ---
 
-## Quickstart & Setup
+## ⚡ How to Run
 
 ### Prerequisites
-- Node.js `>= 20.0.0`
-- npm `>= 10.0.0`
-
-### 1. Install Dependencies
-Run from the repository root:
-```bash
-npm install
-npm install --prefix server
-npm install --prefix web
-```
-
-### 2. Run Locally
-To start both the sync server (port `4000`) and web client (port `3000`) concurrently:
-```bash
-npm run dev
-```
-
-- **Master Controller Dashboard**: [http://localhost:3000/controller](http://localhost:3000/controller)
-- **Display Client 1**: [http://localhost:3000/display/disp-1](http://localhost:3000/display/disp-1)
-- **Display Client 2**: [http://localhost:3000/display/disp-2](http://localhost:3000/display/disp-2)
+- Node.js `>= 20.0.0` or Docker installed
 
 ---
 
-## Features & Core Capabilities
+### Option A: Typical Local Run (npm)
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   npm install --prefix server
+   npm install --prefix web
+   ```
+
+2. **Run Locally**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Open in Browser**:
+   - Master Controller: [http://localhost:3000/controller](http://localhost:3000/controller)
+   - Display Client #1: [http://localhost:3000/display/disp-1](http://localhost:3000/display/disp-1)
+   - Display Client #2: [http://localhost:3000/display/disp-2](http://localhost:3000/display/disp-2)
+
+---
+
+### Option B: Docker Container Run (Local)
+
+Build and run the container locally with Docker:
+
+```bash
+# 1. Build Docker Image
+docker build -t multi-video-sync .
+
+# 2. Run Container
+docker run -d -p 3000:3000 -p 4000:4000 --name video-sync multi-video-sync
+```
+
+Access the app at `http://localhost:3000/controller`.
+
+---
+
+### Option C: Docker Hub Build & Push (For Render Deployment)
+
+To build the Docker image, push it to Docker Hub, and pull it into Render or any cloud container provider:
+
+```bash
+# 1. Log in to Docker Hub
+docker login
+
+# 2. Build & Tag Image (Replace <YOUR_DOCKERHUB_USERNAME> with your Docker Hub ID)
+docker build -t <YOUR_DOCKERHUB_USERNAME>/multi-video-sync:latest .
+
+# 3. Push Image to Docker Hub
+docker push <YOUR_DOCKERHUB_USERNAME>/multi-video-sync:latest
+
+# 4. Pull & Run anywhere
+docker run -d -p 3000:3000 -p 4000:4000 <YOUR_DOCKERHUB_USERNAME>/multi-video-sync:latest
+```
+
+---
+
+## 🌟 Features & Core Capabilities
 
 - **Server-Authoritative Position Model**: Server continuously evaluates `expectedPositionSec(now) = status === 'playing' ? positionAtLastUpdateSec + (now - lastUpdatedAt)/1000 : positionAtLastUpdateSec`.
 - **Master Controller Dashboard**:
-  - Video stream selector dropdown/cards.
+  - Video stream selector cards with live duration meta.
   - Interactive playback control bar (Play, Pause, Seek slider, Restart).
-  - Real-time connected displays monitoring table with live position and drift badges.
+  - Real-time connected displays monitoring table with live position, status, and drift badges.
 - **Display Clients**:
   - Native HTML5 `<video>` element with zero heavy external wrapper libraries.
   - Floating Debug HUD Overlay showing live server expected position vs local position, calculated drift, playback rate, and last correction event.
@@ -87,9 +134,9 @@ npm run dev
 
 ---
 
-## How to Test Drift Correction
+## 🧪 How to Test Drift Correction
 
-1. Start the system via `npm run dev`.
+1. Start the system via `npm run dev` or Docker.
 2. Open the **Controller** ([http://localhost:3000/controller](http://localhost:3000/controller)).
 3. Click **"Open New Display Tab"** twice to launch `disp-1` and `disp-2` in separate browser windows.
 4. On the Controller, select a video and click **PLAY**. Notice both displays start playing in sync.
@@ -100,7 +147,7 @@ npm run dev
 
 ---
 
-## What I'd Do With More Time
+## 💡 What I'd Do With More Time
 
 1. **NTP-Style Clock Offset Estimation**: Calculate network round-trip time (RTT) between server and clients to adjust `Date.now()` timestamps for network latency.
 2. **WebRTC DataChannels**: Implement P2P WebRTC data channels for sub-50ms peer-to-peer sync.
